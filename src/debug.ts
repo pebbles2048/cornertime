@@ -1,3 +1,3 @@
 export function hasDebugQuery(search: string): boolean {
-    return search.includes('debug');
+    return new URLSearchParams(search).has('debug');
 }

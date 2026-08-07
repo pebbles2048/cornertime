@@ -11,6 +11,11 @@ describe('hasDebugQuery', () => {
         assert.equal(hasDebugQuery('?foo=bar'), false);
     });
 
+    it('returns false when debug appears only as a substring of another parameter', () => {
+        assert.equal(hasDebugQuery('?foo=debugx'), false);
+        assert.equal(hasDebugQuery('?mode=debugfan'), false);
+    });
+
     it('returns true for a bare ?debug parameter', () => {
         assert.equal(hasDebugQuery('?debug'), true);
     });
