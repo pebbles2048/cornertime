@@ -8,6 +8,7 @@ import PunishmentLoader from './PunishmentLoader';
 import ReportCard from './ReportCard';
 import ReportViewer from './ReportViewer';
 import DebugOverlay from './DebugOverlay';
+import { MOTION_MAX } from './motionGrid';
 import { hasDebugQuery } from '../debug';
 
 import 'bootstrap/dist/css/bootstrap.css';
@@ -15,7 +16,6 @@ import { formatDuration } from '../time';
 import { requestWakeLock, releaseWakeLock } from '../wakelock';
 
 
-const MOTION_MAX = 255;
 type SetupScreen = 'default' | 'custom' | 'report' | 'preset';
 
 interface AppState {
