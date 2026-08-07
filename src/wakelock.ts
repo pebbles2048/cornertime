@@ -13,6 +13,8 @@ interface WakeLockAPI {
 
 let wakeLockSentinel: WakeLockSentinel | null = null;
 let wakeLockListener: (() => void) | null = null;
+let acquireInFlight = false;
+let acquireToken = 0;
 
 
 export function isWakeLockSupported(): boolean {
@@ -26,27 +28,7 @@ function getWakeLockAPI(): WakeLockAPI {
 }
 
 
-export async function requestWakeLock(): Promise<void> {
-    if (!isWakeLockSupported() || wakeLockSentinel !== null) {
-        return;
-    }
-
-    let sentinel: WakeLockSentinel;
-    try {
-        sentinel = await getWakeLockAPI().request(WAKE_LOCK_TYPE);
-    } catch (error) {
-        // Expected failures: NotAllowedError while the tab is hidden, and
-        // battery-saver rejections. There is nothing to do in either case.
-        return;
-    }
-
-    wakeLockSentinel = sentinel;
-    sentinel.addEventListener('release', () => {
-        if (wakeLockSentinel === sentinel) {
-            wakeLockSentinel = null;
-        }
-    });
-
+function installVisibilityListener() {
     if (wakeLockListener === null) {
         wakeLockListener = () => {
             if (document.visibilityState === 'visible') {
@@ -58,7 +40,60 @@ export async function requestWakeLock(): Promise<void> {
 }
 
 
+function removeVisibilityListener() {
+    if (wakeLockListener !== null) {
+        document.removeEventListener('visibilitychange', wakeLockListener);
+        wakeLockListener = null;
+    }
+}
+
+
+export async function requestWakeLock(): Promise<void> {
+    if (!isWakeLockSupported() || wakeLockSentinel !== null || acquireInFlight) {
+        return;
+    }
+
+    const token = acquireToken;
+    acquireInFlight = true;
+
+    let sentinel: WakeLockSentinel;
+    try {
+        sentinel = await getWakeLockAPI().request(WAKE_LOCK_TYPE);
+    } catch (error) {
+        // Expected failures: NotAllowedError while the tab is hidden, and
+        // battery-saver rejections. There is nothing to do in either case.
+        acquireInFlight = false;
+        if (token === acquireToken) {
+            installVisibilityListener();
+        }
+        return;
+    }
+    acquireInFlight = false;
+
+    // A release may have happened while the request was in flight; if so,
+    // drop the now-unwanted lock instead of holding it past the session.
+    if (token !== acquireToken) {
+        try {
+            await sentinel.release();
+        } catch (error) {
+            // ignore
+        }
+        return;
+    }
+
+    wakeLockSentinel = sentinel;
+    sentinel.addEventListener('release', () => {
+        if (wakeLockSentinel === sentinel) {
+            wakeLockSentinel = null;
+        }
+    });
+    installVisibilityListener();
+}
+
+
 export async function releaseWakeLock(): Promise<void> {
+    acquireToken += 1;
+
     if (wakeLockSentinel !== null) {
         try {
             await wakeLockSentinel.release();
@@ -68,8 +103,5 @@ export async function releaseWakeLock(): Promise<void> {
     }
     wakeLockSentinel = null;
 
-    if (wakeLockListener !== null) {
-        document.removeEventListener('visibilitychange', wakeLockListener);
-        wakeLockListener = null;
-    }
+    removeVisibilityListener();
 }

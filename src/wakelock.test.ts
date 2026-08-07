@@ -106,6 +106,52 @@ describe('requestWakeLock', () => {
         assert.equal(mock.requestCalls, 2);
         assert.equal(mock.sentinels[1].released, false);
     });
+
+    it('drops an in-flight acquire when a release happens before it resolves', async () => {
+        const mock = installMockWakeLock();
+        let resolveRequest: (sentinel: MockSentinel) => void = () => {};
+        mock.request = () => {
+            mock.requestCalls += 1;
+            mock.requestedTypes.push('screen');
+            return new Promise((resolve) => { resolveRequest = resolve; });
+        };
+
+        const pendingAcquire = requestWakeLock();
+        await releaseWakeLock(); // release while the request is still in flight
+
+        const leaked = createSentinel(mock);
+        resolveRequest(leaked); // the pending request now resolves
+        await pendingAcquire;
+
+        assert.equal(leaked.released, true, 'the leaked sentinel must be released, not held');
+
+        document.dispatchEvent(new Event('visibilitychange'));
+        assert.equal(mock.requestCalls, 1, 'no retry-on-visible listener may be left behind');
+    });
+
+    it('installs the retry-on-visible listener even when the first request fails', async () => {
+        const mock = installMockWakeLock();
+        let requestNumber = 0;
+        mock.request = () => {
+            requestNumber += 1;
+            mock.requestCalls += 1;
+            mock.requestedTypes.push('screen');
+            if (requestNumber === 1) {
+                return Promise.reject(new Error('NotAllowedError'));
+            }
+            return Promise.resolve(createSentinel(mock));
+        };
+
+        await requestWakeLock();
+        assert.equal(mock.requestCalls, 1);
+        assert.equal(mock.sentinels.length, 0);
+
+        // the tab becomes visible again -> the retry must kick in
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        assert.equal(mock.requestCalls, 2);
+        assert.equal(mock.sentinels[0].released, false);
+    });
 });
 
 
