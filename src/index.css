@@ -7,3 +7,23 @@ body {
 .App {
     margin-top: 15px;
 }
+
+.debug-overlay {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    padding: 6px;
+    background-color: #000;
+    border: 2px solid #000;
+}
+
+.debug-overlay canvas {
+    display: block;
+    width: 260px;
+    max-width: 80vw;
+}
+
+.debug-overlay .btn {
+    margin-top: 4px;
+}
