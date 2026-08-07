@@ -10,6 +10,7 @@ import ReportViewer from './ReportViewer';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import { formatDuration } from '../time';
+import { requestWakeLock, releaseWakeLock } from '../wakelock';
 
 
 const MOTION_MAX = 255;
@@ -49,6 +50,7 @@ class App extends React.Component<{}, AppState> {
 
     componentWillUnmount() {
         this.fsm.removeListener(this.handleFsmUpdate);
+        releaseWakeLock();
     }
 
     render() {
@@ -99,6 +101,12 @@ class App extends React.Component<{}, AppState> {
     returnToWelcomeScreen = () => this.setState({ setupScreen: 'default' });
 
     handleFsmUpdate = () => {
+        const { state } = this.fsm;
+        if (state === 'preparation' || state === 'punishment' || state === 'cooldown') {
+            requestWakeLock();
+        } else {
+            releaseWakeLock();
+        }
         this.forceUpdate();
     }
 
