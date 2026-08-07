@@ -7,6 +7,8 @@ import PunishmentSetup from './PunishmentSetup';
 import PunishmentLoader from './PunishmentLoader';
 import ReportCard from './ReportCard';
 import ReportViewer from './ReportViewer';
+import DebugOverlay from './DebugOverlay';
+import { hasDebugQuery } from '../debug';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import { formatDuration } from '../time';
@@ -18,6 +20,7 @@ type SetupScreen = 'default' | 'custom' | 'report' | 'preset';
 
 interface AppState {
     setupScreen: SetupScreen;
+    diffy?: any;
 }
 
 
@@ -45,6 +48,10 @@ class App extends React.Component<{}, AppState> {
                 ...this.settings.diffy,
                 onFrame: matrix => this.handleMotionUpdate(matrix),
             });
+            const anyWindow: any = window;
+            anyWindow.cornertime = anyWindow.cornertime || {};
+            anyWindow.cornertime.diffy = this.diffy;
+            this.setState({ diffy: this.diffy });
         }
     }
 
@@ -54,6 +61,19 @@ class App extends React.Component<{}, AppState> {
     }
 
     render() {
+        const overlay = this.state.diffy && hasDebugQuery(window.location.search)
+            ? <DebugOverlay diffy={this.state.diffy} />
+            : null;
+
+        return (
+            <React.Fragment>
+                {this.renderContent()}
+                {overlay}
+            </React.Fragment>
+        );
+    }
+
+    renderContent() {
         const fsm = this.fsm;
 
         switch (fsm.state) {
