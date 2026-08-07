@@ -1,8 +1,10 @@
 import * as React from 'react';
+import { drawMotionGrid } from './motionGrid';
 
 
 interface DebugOverlayProps {
     diffy: any;
+    matrixRef?: { current: number[][] | null };
 }
 
 
@@ -38,6 +40,8 @@ export default class DebugOverlay extends React.Component<DebugOverlayProps, Deb
                 const ctx = this.overlayCanvas.getContext('2d');
                 if (ctx) {
                     ctx.drawImage(source, 0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+                    const matrix = this.props.matrixRef && this.props.matrixRef.current;
+                    drawMotionGrid(ctx, matrix || null, this.overlayCanvas.width, this.overlayCanvas.height);
                 }
             }
             this.frameHandle = requestAnimationFrame(draw);

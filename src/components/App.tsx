@@ -8,6 +8,7 @@ import PunishmentLoader from './PunishmentLoader';
 import ReportCard from './ReportCard';
 import ReportViewer from './ReportViewer';
 import DebugOverlay from './DebugOverlay';
+import { MOTION_MAX } from './motionGrid';
 import { hasDebugQuery } from '../debug';
 
 import 'bootstrap/dist/css/bootstrap.css';
@@ -15,7 +16,6 @@ import { formatDuration } from '../time';
 import { requestWakeLock, releaseWakeLock } from '../wakelock';
 
 
-const MOTION_MAX = 255;
 type SetupScreen = 'default' | 'custom' | 'report' | 'preset';
 
 interface AppState {
@@ -28,6 +28,7 @@ class App extends React.Component<{}, AppState> {
     fsm = new PunishmentStateMachine();
     settings = getSettings();
     diffy: any;
+    latestMotionMatrixRef: { current: number[][] | null } = { current: null };
 
     state: AppState = {
         setupScreen: 'default',
@@ -62,7 +63,7 @@ class App extends React.Component<{}, AppState> {
 
     render() {
         const overlay = this.state.diffy && hasDebugQuery(window.location.search)
-            ? <DebugOverlay diffy={this.state.diffy} />
+            ? <DebugOverlay diffy={this.state.diffy} matrixRef={this.latestMotionMatrixRef} />
             : null;
 
         return (
@@ -131,6 +132,7 @@ class App extends React.Component<{}, AppState> {
     }
 
     handleMotionUpdate = (matrix: number[][]) => {
+        this.latestMotionMatrixRef.current = matrix;
         // matrix elements seem to be 0–255 with 255 meaning "no movement", 0 meaning "chaos"
         // we turn it into a a single number 0.0–1.0 by taking busiest cell
         const minValue = Math.min(...matrix.map(row => Math.min(...row)));
