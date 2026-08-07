@@ -185,7 +185,6 @@ Both artifact types are stored and transmitted using the armored format (base64-
 - **Import a custom punishment:** welcome screen → *"I Have a Custom Punishment"* (`PunishmentLoader`). It accepts **either** the armored format **or** raw JSON.
 - **Design + export a custom punishment:** welcome screen → *"Custom"* (`PunishmentSetup`); the armored preset is printed at the bottom so it can be given to someone else without revealing its contents.
 - **Read a report:** the person punished is given the armored report at the end; anyone can paste it into *"View the Report of a Previous Punishment"* (`ReportViewer`) to see its contents.
-- **Bulk analysis:** `scripts/total_duration.py` sums `totalDuration` over concatenated armored reports piped on stdin.
 
 ## Gotchas
 
